@@ -81,10 +81,54 @@ def trackers_update(trackers, frame):
     for fid in delete_queue:
         del trackers[fid];
 
+def iou(boxA, boxB):
+    # boxes are (x, y, w, h)
+    xA = max(boxA[0], boxB[0]);
+    yA = max(boxA[1], boxB[1]);
+    xB = min(boxA[0] + boxA[2], boxB[0] + boxB[2]);
+    yB = min(boxA[1] + boxA[3], boxB[1] + boxB[3]);
+
+    inter = max(0, xB - xA) * max(0, yB - yA);
+    areaA = boxA[2] * boxA[3];
+    areaB = boxB[2] * boxB[3];
+    return inter / float(areaA + areaB - inter + 1e-6);
+
 
 def trackers_redetect(trackers, frame, face_detector, next_id):
-    pass;
+    boxes, _ = face_detector.detect(frame);
+    used = set();
 
+    for box in boxes:
+        x_min, y_min, x_max, y_max = map(int, box[:4]);
+        w, h = x_max - x_min, y_max - y_min;
+        new_box = (x_min, y_min, w, h);
+
+        best_match = None;
+        best_iou = 0.0;
+
+        for fid, info in trackers.items():
+            iou_val = iou(info["box"], new_box);
+            if iou_val > best_iou:
+                best_iou = iou_val;
+                best_iou = fid;
+
+            if best_iou > 0.3:
+                trackers[best_match]["box"] = new_box;
+                trackers[best_match]["tracker"] = create_tracker();
+                trackers[best_match]["tracker"].init(frame, new_box);
+                used.add(best_match);
+
+            else:
+                tracker = create_tracker();
+                tracker.init(frame, new_box);
+                trackers[next_id] = {
+                    "tracker": tracker,
+                    "box": new_box,
+                    "err": 0
+                };
+                next_id += 1;
+
+    return next_id;
 
 def main(params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
