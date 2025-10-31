@@ -8,6 +8,7 @@ class Person:
         self.pitch = 0.0;
         self.yaw = 0.0;
         self.bbox = bbox;
+        self.time = 0.0;
 
     def update(self, bbox, pitch, yaw) -> None:
         self.bbox = bbox;

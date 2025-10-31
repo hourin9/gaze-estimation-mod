@@ -16,6 +16,8 @@ import uniface
 warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 
+DETECT_INTERVAL = 20;
+MAX_MISSED = 10;
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Gaze estimation inference")
@@ -59,12 +61,40 @@ def pre_process(image):
     return image_batch
 
 
+def create_tracker():
+    return cv2.TrackerCSRT.create();
+
+
+def trackers_update(trackers, frame):
+    delete_queue = [];
+    for fid, info in trackers.items():
+        ok, box = info["trackers"].update(frame);
+        if ok:
+            info["box"] = box;
+            info["missed"] = 0;
+
+        else:
+            info["err"] += 1;
+            if info["err"] >= MAX_MISSED:
+                delete_queue.append(fid);
+
+    for fid in delete_queue:
+        del trackers[fid];
+
+
+def trackers_redetect(trackers, frame, face_detector, next_id):
+    pass;
+
+
 def main(params):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     idx_tensor = torch.arange(params.bins, device=device, dtype=torch.float32)
 
     face_detector = uniface.RetinaFace()  # third-party face detection library
+
+    next_id = 0;
+    faces = {};
 
     try:
         gaze_detector = get_model(params.model, params.bins, inference_mode=True)
@@ -73,6 +103,7 @@ def main(params):
         logging.info("Gaze Estimation model weights loaded.")
     except Exception as e:
         logging.info(f"Exception occured while loading pre-trained weights of gaze estimation model. Exception: {e}")
+        return 1
 
     gaze_detector.to(device)
     gaze_detector.eval()
@@ -119,8 +150,6 @@ def main(params):
                 # Degrees to Radians
                 pitch_predicted = np.radians(pitch_predicted.cpu())
                 yaw_predicted = np.radians(yaw_predicted.cpu())
-
-                print(f"{pitch_predicted} {yaw_predicted}");
 
                 color = (0, 255 ,0);
                 if not (pitch_predicted > -0.45 and pitch_predicted < 0.48):
