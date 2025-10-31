@@ -154,6 +154,9 @@ def draw_bbox(image, bbox, color=(0, 255, 0), thickness=2, proportion=0.2):
     cv2.line(image, (x_max, y_max), (x_max - corner_length, y_max), color, thickness)
 
 
-def draw_bbox_gaze(frame: np.ndarray, bbox, pitch, yaw):
-    draw_bbox(frame, bbox)
-    draw_gaze(frame, bbox, pitch, yaw)
+def draw_bbox_gaze(
+    frame: np.ndarray,
+    bbox, pitch, yaw,
+    boxc = (0, 255, 0), gazec = (0, 0, 255)):
+    draw_bbox(frame, bbox, color=boxc)
+    draw_gaze(frame, bbox, pitch, yaw, color=gazec)

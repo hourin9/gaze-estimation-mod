@@ -120,8 +120,14 @@ def main(params):
                 pitch_predicted = np.radians(pitch_predicted.cpu())
                 yaw_predicted = np.radians(yaw_predicted.cpu())
 
+                print(f"{pitch_predicted} {yaw_predicted}");
+
+                color = (0, 255 ,0);
+                if not (pitch_predicted > -0.45 and pitch_predicted < 0.48):
+                    color = (0, 0, 255);
+
                 # draw box and gaze direction
-                draw_bbox_gaze(frame, bbox, pitch_predicted, yaw_predicted)
+                draw_bbox_gaze(frame, bbox, pitch_predicted, yaw_predicted, boxc=color)
 
             if params.output:
                 out.write(frame)
