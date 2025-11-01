@@ -68,7 +68,7 @@ def create_tracker():
 def trackers_update(trackers, frame):
     delete_queue = [];
     for fid, info in trackers.items():
-        ok, box = info["trackers"].update(frame);
+        ok, box = info["tracker"].update(frame);
         if ok:
             info["box"] = box;
             info["missed"] = 0;
@@ -94,6 +94,16 @@ def iou(boxA, boxB):
     return inter / float(areaA + areaB - inter + 1e-6);
 
 
+def xyxy2xywh(box):
+    x1, y1, x2, y2 = map(int, box[:4]);
+    return (x1, y1, x2 - x1, y2 - y2);
+
+
+def xywh2xyxy(box):
+    x, y, w, h = map(int, box[:4]);
+    return (x, y, x + w, y + h);
+
+
 def trackers_redetect(trackers, frame, face_detector, next_id):
     boxes, _ = face_detector.detect(frame);
     used = set();
@@ -110,23 +120,23 @@ def trackers_redetect(trackers, frame, face_detector, next_id):
             iou_val = iou(info["box"], new_box);
             if iou_val > best_iou:
                 best_iou = iou_val;
-                best_iou = fid;
+                best_match = fid;
 
-            if best_iou > 0.3:
-                trackers[best_match]["box"] = new_box;
-                trackers[best_match]["tracker"] = create_tracker();
-                trackers[best_match]["tracker"].init(frame, new_box);
-                used.add(best_match);
+        if best_iou > 0.3:
+            trackers[best_match]["box"] = new_box;
+            trackers[best_match]["tracker"] = create_tracker();
+            trackers[best_match]["tracker"].init(frame, new_box);
+            used.add(best_match);
 
-            else:
-                tracker = create_tracker();
-                tracker.init(frame, new_box);
-                trackers[next_id] = {
-                    "tracker": tracker,
-                    "box": new_box,
-                    "err": 0
-                };
-                next_id += 1;
+        else:
+            tracker = create_tracker();
+            tracker.init(frame, new_box);
+            trackers[next_id] = {
+                "tracker": tracker,
+                "box": new_box,
+                "err": 0
+            };
+            next_id += 1;
 
     return next_id;
 
@@ -139,6 +149,7 @@ def main(params):
 
     next_id = 0;
     faces = {};
+    frame_count = 0;
 
     try:
         gaze_detector = get_model(params.model, params.bins, inference_mode=True)
@@ -175,9 +186,17 @@ def main(params):
                 logging.info("Failed to obtain frame or EOF")
                 break
 
-            bboxes, keypoints = face_detector.detect(frame)
-            for bbox, keypoint in zip(bboxes, keypoints):
-                x_min, y_min, x_max, y_max = map(int, bbox[:4])
+            trackers_update(faces, frame);
+            next_id = trackers_redetect(
+                faces,
+                frame,
+                face_detector,
+                next_id
+            );
+
+            for fid, info in faces.items():
+                bbox = xywh2xyxy(info["box"]);
+                x_min, y_min, x_max, y_max = map(int, bbox);
 
                 image = frame[y_min:y_max, x_min:x_max]
                 image = pre_process(image)
