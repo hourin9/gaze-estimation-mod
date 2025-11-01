@@ -187,12 +187,16 @@ def main(params):
                 break
 
             trackers_update(faces, frame);
-            next_id = trackers_redetect(
-                faces,
-                frame,
-                face_detector,
-                next_id
-            );
+
+            if frame_count == DETECT_INTERVAL or frame_count == 0:
+                next_id = trackers_redetect(
+                    faces,
+                    frame,
+                    face_detector,
+                    next_id
+                );
+
+                frame_count = 0;
 
             for fid, info in faces.items():
                 bbox = xywh2xyxy(info["box"]);
@@ -228,6 +232,8 @@ def main(params):
                 cv2.imshow('Demo', frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
+
+            frame_count += 1;
 
     cap.release()
     if params.output:
