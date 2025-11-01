@@ -48,6 +48,9 @@ def parse_args():
 
 
 def pre_process(image):
+    if image is None or image.size == 0:
+        image = np.full((448, 448, 3), 255, dtype=np.uint8);
+
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     transform = transforms.Compose([
         transforms.ToPILImage(),
