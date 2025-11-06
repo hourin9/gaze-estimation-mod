@@ -1,3 +1,4 @@
+import cv2
 import numpy;
 
 from utils import helpers;
@@ -10,10 +11,18 @@ class Person:
         self.bbox = bbox;
         self.time = 0.0;
 
-    def update(self, bbox, pitch, yaw) -> None:
-        self.bbox = bbox;
-        self.pitch = pitch;
-        self.yaw = yaw;
+    def attach_tracker(self, tracker: cv2.Tracker) -> None:
+        self.tracker = tracker;
+        self.err = 0;
+
+    def update_tracker(self, frame) -> int:
+        ok, box = self.tracker.update(frame);
+        if ok:
+            self.bbox = box;
+            self.err = 0;
+        else:
+            self.err += 1;
+        return self.err;
 
     def draw(self, frame) -> None:
         helpers.draw_bbox(frame, self.bbox)
