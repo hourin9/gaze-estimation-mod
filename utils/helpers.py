@@ -184,3 +184,13 @@ def xywh2xyxy(box):
     x, y, w, h = map(int, box[:4]);
     return (x, y, x + w, y + h);
 
+
+def confidence_color(confidence: float) -> tuple[int, int, int]:
+    if confidence <= 0.3:
+        return (0, 255, 0);
+
+    if confidence <= 0.75:
+        return (0, 255, 255);
+
+    return (0, 0, 255);
+

@@ -9,6 +9,7 @@ class Person:
         self.yaw = 0.0;
         self.bbox = bbox;
         self.time = 0.0;
+        self.confidence = 0.0;
 
     def get_bbox(self):
         return self.bbox;
@@ -33,7 +34,8 @@ class Person:
 
     def draw(self, frame) -> None:
         converted_box = helpers.xywh2xyxy(self.bbox);
-        helpers.draw_bbox(frame, converted_box)
+        color = helpers.confidence_color(self.confidence);
+        helpers.draw_bbox(frame, converted_box, color=color);
 
         # TODO: draw with different colors
         helpers.draw_gaze(frame, converted_box, self.pitch, self.yaw)
