@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from torchvision import transforms
 
 from config import data_config
+from person import Person
 from utils.helpers import get_model, draw_bbox_gaze
 
 import uniface
@@ -70,16 +71,11 @@ def create_tracker():
 
 def trackers_update(trackers, frame):
     delete_queue = [];
-    for fid, info in trackers.items():
-        ok, box = info["tracker"].update(frame);
-        if ok:
-            info["box"] = box;
-            info["missed"] = 0;
 
-        else:
-            info["err"] += 1;
-            if info["err"] >= MAX_MISSED:
-                delete_queue.append(fid);
+    for fid, info in trackers.items():
+        err = info.update_tracker(frame);
+        if err >= MAX_MISSED:
+            delete_queue.append(fid);
 
     for fid in delete_queue:
         del trackers[fid];
@@ -120,25 +116,25 @@ def trackers_redetect(trackers, frame, face_detector, next_id):
         best_iou = 0.0;
 
         for fid, info in trackers.items():
-            iou_val = iou(info["box"], new_box);
+            iou_val = iou(info.get_bbox(), new_box);
             if iou_val > best_iou:
                 best_iou = iou_val;
                 best_match = fid;
 
         if best_iou > 0.3:
-            trackers[best_match]["box"] = new_box;
-            trackers[best_match]["tracker"] = create_tracker();
-            trackers[best_match]["tracker"].init(frame, new_box);
+            tracker = create_tracker();
+            tracker.init(frame, new_box);
+            trackers[best_match].bbox = new_box;
+            trackers[best_match].attach_tracker(tracker);
+
             used.add(best_match);
 
         else:
+            person = Person(next_id, new_box);
             tracker = create_tracker();
             tracker.init(frame, new_box);
-            trackers[next_id] = {
-                "tracker": tracker,
-                "box": new_box,
-                "err": 0
-            };
+            person.attach_tracker(tracker);
+            trackers[next_id] = person;
             next_id += 1;
 
     return next_id;
@@ -202,7 +198,7 @@ def main(params):
                 frame_count = 0;
 
             for fid, info in faces.items():
-                bbox = xywh2xyxy(info["box"]);
+                bbox = xywh2xyxy(info.get_bbox());
                 x_min, y_min, x_max, y_max = map(int, bbox);
 
                 image = frame[y_min:y_max, x_min:x_max]
