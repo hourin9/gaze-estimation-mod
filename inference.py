@@ -10,7 +10,7 @@ from torchvision import transforms
 
 from config import data_config
 from person import Person
-from utils.helpers import get_model, draw_bbox_gaze
+from utils.helpers import *
 
 import uniface
 
@@ -79,28 +79,6 @@ def trackers_update(trackers, frame):
 
     for fid in delete_queue:
         del trackers[fid];
-
-def iou(boxA, boxB):
-    # boxes are (x, y, w, h)
-    xA = max(boxA[0], boxB[0]);
-    yA = max(boxA[1], boxB[1]);
-    xB = min(boxA[0] + boxA[2], boxB[0] + boxB[2]);
-    yB = min(boxA[1] + boxA[3], boxB[1] + boxB[3]);
-
-    inter = max(0, xB - xA) * max(0, yB - yA);
-    areaA = boxA[2] * boxA[3];
-    areaB = boxB[2] * boxB[3];
-    return inter / float(areaA + areaB - inter + 1e-6);
-
-
-def xyxy2xywh(box):
-    x1, y1, x2, y2 = map(int, box[:4]);
-    return (x1, y1, x2 - x1, y2 - y2);
-
-
-def xywh2xyxy(box):
-    x, y, w, h = map(int, box[:4]);
-    return (x, y, x + w, y + h);
 
 
 def trackers_redetect(trackers, frame, face_detector, next_id):
