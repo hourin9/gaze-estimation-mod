@@ -10,7 +10,7 @@ from torchvision import transforms
 
 from config import data_config
 from person import Person
-from utils.helpers import *
+from utils.helpers import get_model, draw_bbox_gaze
 
 import uniface
 
@@ -80,6 +80,28 @@ def trackers_update(trackers, frame):
     for fid in delete_queue:
         del trackers[fid];
 
+def iou(boxA, boxB):
+    # boxes are (x, y, w, h)
+    xA = max(boxA[0], boxB[0]);
+    yA = max(boxA[1], boxB[1]);
+    xB = min(boxA[0] + boxA[2], boxB[0] + boxB[2]);
+    yB = min(boxA[1] + boxA[3], boxB[1] + boxB[3]);
+
+    inter = max(0, xB - xA) * max(0, yB - yA);
+    areaA = boxA[2] * boxA[3];
+    areaB = boxB[2] * boxB[3];
+    return inter / float(areaA + areaB - inter + 1e-6);
+
+
+def xyxy2xywh(box):
+    x1, y1, x2, y2 = map(int, box[:4]);
+    return (x1, y1, x2 - x1, y2 - y2);
+
+
+def xywh2xyxy(box):
+    x, y, w, h = map(int, box[:4]);
+    return (x, y, x + w, y + h);
+
 
 def trackers_redetect(trackers, frame, face_detector, next_id):
     boxes, _ = face_detector.detect(frame);
@@ -94,7 +116,7 @@ def trackers_redetect(trackers, frame, face_detector, next_id):
         best_iou = 0.0;
 
         for fid, info in trackers.items():
-            iou_val = iou(xyxy2xywh(info.get_bbox()), new_box);
+            iou_val = iou(info.get_bbox(), new_box);
             if iou_val > best_iou:
                 best_iou = iou_val;
                 best_match = fid;
@@ -102,13 +124,13 @@ def trackers_redetect(trackers, frame, face_detector, next_id):
         if best_iou > 0.3:
             tracker = create_tracker();
             tracker.init(frame, new_box);
-            trackers[best_match].bbox = xywh2xyxy(new_box);
+            trackers[best_match].bbox = new_box;
             trackers[best_match].attach_tracker(tracker);
 
             used.add(best_match);
 
         else:
-            person = Person(next_id, xywh2xyxy(new_box));
+            person = Person(next_id, new_box);
             tracker = create_tracker();
             tracker.init(frame, new_box);
             person.attach_tracker(tracker);
@@ -176,7 +198,7 @@ def main(params):
                 frame_count = 0;
 
             for fid, info in faces.items():
-                bbox = info.get_bbox();
+                bbox = xywh2xyxy(info.get_bbox());
                 x_min, y_min, x_max, y_max = map(int, bbox);
 
                 image = frame[y_min:y_max, x_min:x_max]
@@ -194,9 +216,6 @@ def main(params):
                 # Degrees to Radians
                 pitch_predicted = np.radians(pitch_predicted.cpu())
                 yaw_predicted = np.radians(yaw_predicted.cpu())
-
-                info.update_gaze(pitch_predicted, yaw_predicted);
-                info.draw(frame);
 
                 color = (0, 255 ,0);
                 if not (pitch_predicted > -0.45 and pitch_predicted < 0.48):

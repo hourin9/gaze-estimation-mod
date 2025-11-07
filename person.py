@@ -21,7 +21,7 @@ class Person:
     def update_tracker(self, frame) -> int:
         ok, box = self.tracker.update(frame);
         if ok:
-            self.bbox = helpers.xywh2xyxy(box);
+            self.bbox = box;
             self.err = 0;
         else:
             self.err += 1;
