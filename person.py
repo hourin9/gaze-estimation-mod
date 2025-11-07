@@ -32,8 +32,9 @@ class Person:
         self.yaw = yaw;
 
     def draw(self, frame) -> None:
-        helpers.draw_bbox(frame, self.bbox)
+        converted_box = helpers.xywh2xyxy(self.bbox);
+        helpers.draw_bbox(frame, converted_box)
 
         # TODO: draw with different colors
-        helpers.draw_gaze(frame, self.bbox, self.pitch, self.yaw)
+        helpers.draw_gaze(frame, converted_box, self.pitch, self.yaw)
 
