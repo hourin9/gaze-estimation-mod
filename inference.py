@@ -176,7 +176,7 @@ def main(params):
                 frame_count = 0;
 
             for fid, info in faces.items():
-                bbox = xywh2xyxy(info.get_bbox());
+                bbox = info.get_bbox();
                 x_min, y_min, x_max, y_max = map(int, bbox);
 
                 image = frame[y_min:y_max, x_min:x_max]
