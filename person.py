@@ -1,4 +1,5 @@
-import cv2;
+import cv2
+import torch;
 
 from utils import helpers;
 
@@ -31,6 +32,14 @@ class Person:
     def update_gaze(self, pitch, yaw) -> None:
         self.pitch = pitch;
         self.yaw = yaw;
+
+    def update_confidence(self, delta: float, decay: float = 0.1) -> None:
+        rate = helpers.cheat_rate(self.pitch, self.yaw);
+        if rate == 0 and self.confidence > 0:
+            self.confidence -= decay;
+        else:
+            self.confidence += rate * delta;
+            self.confidence = helpers.clamp(self.confidence, min=0, max=1);
 
     def draw(self, frame) -> None:
         converted_box = helpers.xywh2xyxy(self.bbox);

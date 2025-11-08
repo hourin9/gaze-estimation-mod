@@ -196,6 +196,7 @@ def main(params):
                 yaw_predicted = np.radians(yaw_predicted.cpu())
 
                 info.update_gaze(pitch_predicted, yaw_predicted);
+                info.update_confidence(0.05);
                 info.draw(frame);
 
             if params.output:

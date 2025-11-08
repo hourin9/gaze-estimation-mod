@@ -194,3 +194,36 @@ def confidence_color(confidence: float) -> tuple[int, int, int]:
 
     return (0, 0, 255);
 
+
+# Numbers in this section should be finetuned.
+def cheat_rate(pitch: float, yaw: float) -> float:
+    print(f"{pitch} {yaw}");
+
+    # Early return if student isn't looking down as no one
+    # cheats via the ceiling.
+    if yaw > 0.2:
+        print("Looking up");
+        return 0;
+
+    if pitch > 0.6 or pitch < -0.6:
+        print("Looking completely sideway");
+        return 1;
+
+    if pitch > 0.40 or pitch < -0.45:
+        print("Looking sideway");
+        return 0.5;
+
+    if pitch > 0.3 or pitch < -0.3:
+        print("hmm");
+        return 0.25;
+
+    return 0;
+
+def clamp(n, min, max):
+    if n < min:
+        return min
+    elif n > max:
+        return max
+    else:
+        return n
+
