@@ -10,6 +10,7 @@ from torchvision import transforms
 
 from config import data_config
 from person import Person
+from utils.clipping import VideoClipper
 from utils.helpers import *
 
 import uniface
@@ -128,6 +129,9 @@ def main(params):
     faces = {};
     frame_count = 0;
 
+    is_recording = False;
+    clipper = None;
+
     try:
         gaze_detector = get_model(params.model, params.bins, inference_mode=True)
         state_dict = torch.load(params.weight, map_location=device)
@@ -146,17 +150,18 @@ def main(params):
     else:
         cap = cv2.VideoCapture(video_source)
 
-    if params.output:
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        out = cv2.VideoWriter(params.output, fourcc, cap.get(cv2.CAP_PROP_FPS), (width, height))
+    # if params.output:
+    #     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    #     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    #     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    #     out = cv2.VideoWriter(params.output, fourcc, cap.get(cv2.CAP_PROP_FPS), (width, height))
 
     if not cap.isOpened():
         raise IOError("Cannot open webcam")
 
     with torch.no_grad():
         while True:
+            cheating = False;
             success, frame = cap.read()
 
             if not success:
@@ -197,10 +202,32 @@ def main(params):
 
                 info.update_gaze(pitch_predicted, yaw_predicted);
                 info.update_confidence(0.05);
+
                 info.draw(frame);
 
-            if params.output:
-                out.write(frame)
+                if info.is_cheating():
+                    cheating = True;
+
+            # if params.output:
+            #     out.write(frame)
+
+            if cheating and not is_recording:
+                print("RECORD START");
+                is_recording = True;
+                fps = cap.get(cv2.CAP_PROP_FPS);
+                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH));
+                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT));
+                clipper = VideoClipper(fps, (width, height), "cap");
+
+            elif not cheating and is_recording:
+                print("RECORD STOP");
+                if clipper is not None:
+                    clipper.close();
+                clipper = None;
+                is_recording = False;
+
+            if is_recording and clipper is not None:
+                clipper.write(frame);
 
             if params.view:
                 cv2.imshow('Demo', frame)
@@ -210,8 +237,8 @@ def main(params):
             frame_count += 1;
 
     cap.release()
-    if params.output:
-        out.release()
+    # if params.output:
+    #     out.release()
     cv2.destroyAllWindows()
 
 
