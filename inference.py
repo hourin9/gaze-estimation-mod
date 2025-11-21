@@ -175,7 +175,7 @@ def main(params):
 
                 frame_count = 0;
 
-            for fid, info in faces.items():
+            for _, info in faces.items():
                 bbox = xywh2xyxy(info.get_bbox());
                 x_min, y_min, x_max, y_max = map(int, bbox);
 
