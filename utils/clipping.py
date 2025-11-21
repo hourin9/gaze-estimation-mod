@@ -5,7 +5,7 @@ import os;
 
 class VideoClipper:
     def __init__(self, fps: float, size: cv2.typing.Size, prefix: str) -> None:
-        if os.path.exists(prefix):
+        if not os.path.exists(prefix):
             os.mkdir(prefix);
         if not os.path.isdir(prefix):
             raise IOError();
