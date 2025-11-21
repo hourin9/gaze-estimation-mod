@@ -49,6 +49,6 @@ class Person:
         # TODO: draw with different colors
         helpers.draw_gaze(frame, converted_box, self.pitch, self.yaw)
 
-    def is_cheating(self) -> float:
+    def is_cheating(self) -> bool:
         return self.confidence >= 0.75;
 
