@@ -35,11 +35,10 @@ class ModelCont:
             );
             self.state_dict = torch.load(self.weight, map_location=device);
             self.gaze_detector.load_state_dict(self.state_dict);
+            self.gaze_detector.to(device);
+            self.gaze_detector.eval();
         except Exception as _:
             return 1;
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu");
-face_detector = uniface.RetinaFace();
 
 app = Flask(__name__);
 
@@ -68,11 +67,16 @@ def get_webcam_frame():
                + frame.tobytes()
                + b'\r\n');
 
-model = ModelCont(
-    model="mobilenetv2",
-    weight="weights/mobilenetv2.pt"
-);
 def get_webcam_frame_with_model_shit():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu");
+
+    model = ModelCont(
+        model="mobilenetv2",
+        weight="weights/mobilenetv2.pt"
+    );
+    model.load_model(device);
+    face_detector = uniface.RetinaFace();
+
     next_id = 0;
     faces = {};
     frame_count = 0;
@@ -147,6 +151,11 @@ def get_webcam_frame_with_model_shit():
                 clipper.write(frame);
 
             frame_count += 1;
+
+            _, jpeg = cv2.imencode(".jpg", frame);
+            yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n'
+                + jpeg.tobytes()
+                + b'\r\n');
 
 @app.route("/")
 def test():
