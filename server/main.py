@@ -1,11 +1,15 @@
 from flask import Flask, Response;
 import cv2;
 import torch;
+import torch.nn.functional as F
 from torchvision import transforms;
 import uniface;
 import numpy as np;
 
 from config import data_config
+from utils import tracker
+from utils import helpers
+from utils.clipping import VideoClipper
 from utils.helpers import get_model;
 
 class ModelCont:
@@ -64,10 +68,90 @@ def get_webcam_frame():
                + frame.tobytes()
                + b'\r\n');
 
+model = ModelCont(
+    model="mobilenetv2",
+    weight="weights/mobilenetv2.pt"
+);
+def get_webcam_frame_with_model_shit():
+    next_id = 0;
+    faces = {};
+    frame_count = 0;
+
+    is_recording = False;
+    clipper = None;
+
+    with torch.no_grad():
+        while True:
+            cheating = False;
+            _, frame = cam.read()
+
+            tracker.trackers_update(faces, frame);
+
+            if frame_count == tracker.DETECT_INTERVAL or frame_count == 0:
+                next_id = tracker.trackers_redetect(
+                    faces,
+                    frame,
+                    face_detector,
+                    next_id
+                );
+
+                frame_count = 0;
+
+            for _, info in faces.items():
+                bbox = helpers.xywh2xyxy(info.get_bbox());
+                x_min, y_min, x_max, y_max = map(int, bbox);
+
+                image = frame[y_min:y_max, x_min:x_max]
+                image = pre_process(image)
+                image = image.to(device)
+
+                pitch, yaw = model.gaze_detector(image)
+
+                pitch_predicted, yaw_predicted = F.softmax(pitch, dim=1), F.softmax(yaw, dim=1)
+
+                # Mapping from binned (0 to 90) to angles (-180 to 180) or (0 to 28) to angles (-42, 42)
+                pitch_predicted = torch.sum(pitch_predicted * model.idx_tensor, dim=1) * model.binwidth - model.angle
+                yaw_predicted = torch.sum(yaw_predicted * model.idx_tensor, dim=1) * model.binwidth - model.angle
+
+                # Degrees to Radians
+                pitch_predicted = np.radians(pitch_predicted.cpu())
+                yaw_predicted = np.radians(yaw_predicted.cpu())
+
+                info.update_gaze(pitch_predicted, yaw_predicted);
+                info.update_confidence(0.05);
+
+                info.draw(frame);
+
+                if info.is_cheating():
+                    cheating = True;
+
+            # if params.output:
+            #     out.write(frame)
+
+            if cheating and not is_recording:
+                print("RECORD START");
+                is_recording = True;
+                fps = cam.get(cv2.CAP_PROP_FPS);
+                width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH));
+                height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT));
+                clipper = VideoClipper(fps, (width, height), "cap");
+
+            elif not cheating and is_recording:
+                print("RECORD STOP");
+                if clipper is not None:
+                    clipper.close();
+                clipper = None;
+                is_recording = False;
+
+            if is_recording and clipper is not None:
+                clipper.write(frame);
+
+            frame_count += 1;
+
 @app.route("/")
 def test():
     return Response(
-            get_webcam_frame(),
+            get_webcam_frame_with_model_shit(),
             mimetype="multipart/x-mixed-replace; boundary=frame"
         );
 
