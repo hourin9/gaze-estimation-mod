@@ -40,6 +40,27 @@ class ModelCont:
         except Exception as _:
             return 1;
 
+    def estimate(self, frame) -> tuple[int, int]:
+        pitch, yaw = self.gaze_detector(frame);
+
+        pitch_predicted = F.softmax(pitch, dim=1);
+        yaw_predicted = F.softmax(yaw, dim=1);
+
+        # Mapping from binned (0 to 90) to angles (-180 to 180)
+        # or (0 to 28) to angles (-42, 42)
+        pitch_predicted = torch.sum(pitch_predicted * self.idx_tensor, dim=1) \
+                * self.binwidth \
+                - self.angle;
+        yaw_predicted = torch.sum(yaw_predicted * self.idx_tensor, dim=1) \
+                * self.binwidth \
+                - self.angle;
+
+        # Degrees to Radians
+        pitch_predicted = np.radians(pitch_predicted.cpu());
+        yaw_predicted = np.radians(yaw_predicted.cpu());
+
+        return (pitch_predicted[0], yaw_predicted[0]);
+
 app = Flask(__name__);
 
 def pre_process(image):
@@ -109,19 +130,8 @@ def get_webcam_frame_with_model_shit():
                 image = pre_process(image)
                 image = image.to(device)
 
-                pitch, yaw = model.gaze_detector(image)
-
-                pitch_predicted, yaw_predicted = F.softmax(pitch, dim=1), F.softmax(yaw, dim=1)
-
-                # Mapping from binned (0 to 90) to angles (-180 to 180) or (0 to 28) to angles (-42, 42)
-                pitch_predicted = torch.sum(pitch_predicted * model.idx_tensor, dim=1) * model.binwidth - model.angle
-                yaw_predicted = torch.sum(yaw_predicted * model.idx_tensor, dim=1) * model.binwidth - model.angle
-
-                # Degrees to Radians
-                pitch_predicted = np.radians(pitch_predicted.cpu())
-                yaw_predicted = np.radians(yaw_predicted.cpu())
-
-                info.update_gaze(pitch_predicted, yaw_predicted);
+                pitch, yaw = model.estimate(image);
+                info.update_gaze(pitch, yaw);
                 info.update_confidence(0.05);
 
                 info.draw(frame);
