@@ -171,3 +171,6 @@ cython_debug/
 *.mp4
 *.webm
 
+*.vim
+chochetpbl.py
+
