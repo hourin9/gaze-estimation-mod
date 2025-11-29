@@ -168,12 +168,38 @@ def get_webcam_frame_with_model_shit():
                 + jpeg.tobytes()
                 + b'\r\n');
 
-@app.route("/")
+@app.route("/stream")
 def test():
     return Response(
             get_webcam_frame_with_model_shit(),
             mimetype="multipart/x-mixed-replace; boundary=frame"
         );
+
+@app.route("/")
+def index():
+    return """
+    <html>
+        <head>
+            <title>Ho tro phat hien gian lan trong thi cu</title>
+            <style>
+                body { font-family: Arial; background: #111; color: white; text-align: center; }
+                img { width: 640px; border: 2px solid white; }
+                button { padding: 10px 20px; }
+            </style>
+        </head>
+        <body>
+            <h1>Webcam Monitor</h1>
+
+            <img src="/stream" />
+
+            <br><br>
+
+            <button onclick="alert('gay')">Start recording</button>
+            <button onclick="alert('save image')">Take screenshot</button>
+
+        </body>
+    </html>
+    """
 
 app.run(host="0.0.0.0", threaded=True);
 
