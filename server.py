@@ -79,8 +79,8 @@ def pre_process(image):
     image_batch = image.unsqueeze(0)
     return image_batch
 
-cam = cv2.VideoCapture(0);
 def get_webcam_frame():
+    cam = cv2.VideoCapture(0);
     while True:
         _, img = cam.read();
         _, frame = cv2.imencode(".jpg", img);
@@ -89,6 +89,7 @@ def get_webcam_frame():
                + b'\r\n');
 
 def get_webcam_frame_with_model_shit():
+    cam = cv2.VideoCapture(0);
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu");
 
     model = ModelCont(
@@ -175,5 +176,4 @@ def test():
         );
 
 app.run(host="0.0.0.0", threaded=True);
-cam.release();
 
