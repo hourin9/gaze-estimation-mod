@@ -1,4 +1,4 @@
-from flask import Flask, Response;
+from flask import Flask, Response, jsonify;
 import cv2;
 import torch;
 import torch.nn.functional as F
@@ -7,6 +7,7 @@ import uniface;
 import numpy as np;
 
 from config import data_config
+from person import Person
 from utils import tracker
 from utils import helpers
 from utils.clipping import VideoClipper
@@ -88,6 +89,11 @@ def get_webcam_frame():
                + frame.tobytes()
                + b'\r\n');
 
+current_stats = {
+    "total": 0,
+    "sussy": 0,
+};
+
 def get_webcam_frame_with_model_shit():
     cam = cv2.VideoCapture(0);
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu");
@@ -163,10 +169,23 @@ def get_webcam_frame_with_model_shit():
 
             frame_count += 1;
 
+            current_stats["total"] = len(faces);
+
+            sussy_count = 0;
+            for face in faces.items():
+                _, person = face;
+                if person.is_cheating():
+                    sussy_count += 1;
+            current_stats["sussy"] = sussy_count;
+
             _, jpeg = cv2.imencode(".jpg", frame);
             yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n'
                 + jpeg.tobytes()
                 + b'\r\n');
+
+@app.route("/stats")
+def stats():
+    return jsonify(current_stats);
 
 @app.route("/stream")
 def test():
@@ -192,12 +211,32 @@ def index():
 
             <img src="/stream" />
 
+            <h2>Hoc sinh gian lan:
+                <span id="sussy">0</span>
+            </h2>
+
+            <h2> Tong so hoc sinh:
+                <span id="total">0</span>
+            </h2>
+
+            <script>
+                function updateStats() {
+                    fetch('/stats')
+                        .then(r => r.json())
+                        .then(data => {
+                            document.getElementById('total').innerText = data.total;
+                            document.getElementById('sussy').innerText = data.sussy;
+                        });
+                }
+                setInterval(updateStats, 200);
+            </script>
+
             <br><br>
 
             <button onclick="alert('gay')">Start recording</button>
             <button onclick="alert('save image')">Take screenshot</button>
-
         </body>
+
     </html>
     """
 
