@@ -1,3 +1,5 @@
+import time;
+
 import cv2
 import logging
 import argparse
@@ -5,12 +7,13 @@ import warnings
 import numpy as np
 
 import torch
+from torch.jit import export
 import torch.nn.functional as F
 from torchvision import transforms
 
 from config import data_config
 from person import Person
-from utils import tracker
+from utils import graph, tracker
 from utils.clipping import VideoClipper
 from utils.helpers import *
 
@@ -104,8 +107,18 @@ def main(params):
     if not cap.isOpened():
         raise IOError("Cannot open webcam")
 
+    frame_times = [];
+    start_time = time.perf_counter();
+    prev_time = start_time;
+    exported = False;
+
     with torch.no_grad():
         while True:
+            now = time.perf_counter();
+            dt = now - prev_time;
+            prev_time = now;
+            frame_times.append(dt);
+
             cheating = False;
             success, frame = cap.read()
 
@@ -178,6 +191,14 @@ def main(params):
                 cv2.imshow('Demo', frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
+
+            if not exported and (now - start_time) >= 5.0:
+                graph.export_frame_time_plot(
+                    frame_times,
+                    "Model performance",
+                    "perf.png");
+                print("exported");
+                exported = True;
 
             frame_count += 1;
 
