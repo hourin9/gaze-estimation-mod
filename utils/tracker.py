@@ -22,7 +22,7 @@ def trackers_update(trackers, frame):
 
 def trackers_redetect(trackers, frame, face_detector, next_id):
     boxes, _ = face_detector.detect(frame);
-    used = set();
+    matched = set();
 
     for box in boxes:
         x_min, y_min, x_max, y_max = map(int, box[:4]);
@@ -43,8 +43,9 @@ def trackers_redetect(trackers, frame, face_detector, next_id):
             tracker.init(frame, new_box);
             trackers[best_match].bbox = new_box;
             trackers[best_match].attach_tracker(tracker);
+            trackers[best_match].err = 0;
 
-            used.add(best_match);
+            matched.add(best_match);
 
         else:
             person = Person(next_id, new_box);
@@ -53,6 +54,10 @@ def trackers_redetect(trackers, frame, face_detector, next_id):
             person.attach_tracker(tracker);
             trackers[next_id] = person;
             next_id += 1;
+
+    for fid, info in trackers.items():
+        if fid not in matched:
+            info.err += MAX_MISSED / 2;
 
     return next_id;
 

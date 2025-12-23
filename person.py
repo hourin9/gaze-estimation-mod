@@ -28,7 +28,6 @@ class Person:
             self.err += 1;
         else:
             self.bbox = box;
-            self.err = 0;
         return self.err;
 
     def update_gaze(self, pitch, yaw) -> None:
