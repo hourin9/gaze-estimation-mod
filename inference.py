@@ -108,8 +108,8 @@ def main(params):
         raise IOError("Cannot open webcam")
 
     frame_times = [];
-    start_time = time.perf_counter();
-    prev_time = start_time;
+    prev_time = time.perf_counter();
+    frame_export_count = 0;
     exported = False;
 
     with torch.no_grad():
@@ -192,14 +192,12 @@ def main(params):
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
 
-            if not exported and (now - start_time) >= 5.0:
-                graph.export_frame_time_plot(
-                    frame_times,
-                    "Model performance",
-                    "perf.png");
+            if not exported and frame_export_count >= 50:
+                graph.save_frame_times(params.model + "_time", frame_times);
                 print("exported");
                 exported = True;
 
+            frame_export_count += 1;
             frame_count += 1;
 
     cap.release()

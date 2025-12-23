@@ -1,6 +1,8 @@
 import seaborn as sns;
 import matplotlib.pyplot as plt;
 
+import csv;
+
 def export_frame_time_plot(frame_times, title, filename):
     sns.set_theme(style="whitegrid");
 
@@ -17,4 +19,11 @@ def export_frame_time_plot(frame_times, title, filename):
     plt.tight_layout();
     plt.savefig(filename);
     plt.close();
+
+def save_frame_times(filename, frame_times):
+    with open(filename, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["frame", "frame_time"])
+        for i, t in enumerate(frame_times):
+            writer.writerow([i, t])
 
