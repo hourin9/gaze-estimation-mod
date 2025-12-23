@@ -22,11 +22,13 @@ class Person:
 
     def update_tracker(self, frame) -> int:
         ok, box = self.tracker.update(frame);
-        if ok:
+        if not ok:
+            self.err += 5;
+        if helpers.iou(self.bbox, box) < 0.1:
+            self.err += 1;
+        else:
             self.bbox = box;
             self.err = 0;
-        else:
-            self.err += 1;
         return self.err;
 
     def update_gaze(self, pitch, yaw) -> None:
