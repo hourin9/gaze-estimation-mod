@@ -27,3 +27,12 @@ def save_frame_times(filename, frame_times):
         for i, t in enumerate(frame_times):
             writer.writerow([i, t])
 
+def save_confidence_log(filename, records):
+    with open(filename, "w", newline="") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["frame", "pid", "confidence"]
+        )
+        writer.writeheader()
+        writer.writerows(records)
+

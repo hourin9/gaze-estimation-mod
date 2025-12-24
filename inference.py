@@ -80,6 +80,8 @@ def main(params):
     is_recording = False;
     clipper = None;
 
+    confidence_log = [];
+
     try:
         gaze_detector = get_model(params.model, params.bins, inference_mode=True)
         state_dict = torch.load(params.weight, map_location=device)
@@ -161,6 +163,12 @@ def main(params):
                 info.update_gaze(pitch_predicted, yaw_predicted);
                 info.update_confidence(0.05);
 
+                confidence_log.append({
+                    "frame": frame_export_count,
+                    "pid": info.id,
+                    "confidence": info.confidence,
+                });
+
                 info.draw(frame);
 
                 if info.is_cheating():
@@ -199,6 +207,8 @@ def main(params):
 
             frame_export_count += 1;
             frame_count += 1;
+
+    graph.save_confidence_log("confidence.csv", confidence_log);
 
     cap.release()
     # if params.output:
