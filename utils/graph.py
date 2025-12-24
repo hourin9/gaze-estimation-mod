@@ -31,7 +31,7 @@ def save_confidence_log(filename, records):
     with open(filename, "w", newline="") as f:
         writer = csv.DictWriter(
             f,
-            fieldnames=["frame", "pid", "confidence"]
+            fieldnames=["frame", "pid", "confidence", "pitch", "yaw"]
         )
         writer.writeheader()
         writer.writerows(records)

@@ -163,10 +163,14 @@ def main(params):
                 info.update_gaze(pitch_predicted, yaw_predicted);
                 info.update_confidence(0.05);
 
+                pitch_deg = float(torch.rad2deg(info.pitch).item())
+                yaw_deg   = float(torch.rad2deg(info.yaw).item())
                 confidence_log.append({
                     "frame": frame_export_count,
                     "pid": info.id,
                     "confidence": info.confidence,
+                    "pitch": pitch_deg,
+                    "yaw": yaw_deg,
                 });
 
                 info.draw(frame);
