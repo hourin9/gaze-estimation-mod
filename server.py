@@ -242,16 +242,34 @@ def index():
                 img { width: 640px; border: 2px solid white; }
                 button { padding: 10px 20px; }
             </style>
+
+            <script>
+                function takeScreenshot() {
+                    const img = document.getElementById("stream");
+                    const canvas = document.createElement("canvas");
+
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0);
+
+                    const link = document.createElement("a");
+                    link.download = Date.now() + ".png";
+                    link.href = canvas.toDataURL("image/png");
+                    link.click();
+                }
+            </script>
         </head>
         <body>
             <h1>Webcam Monitor</h1>
 
-            <img src="/stream" />
+            <img id="stream" src="/stream" />
 
             <br><br>
 
             <button onclick="alert('gay')">Start recording</button>
-            <button onclick="alert('save image')">Take screenshot</button>
+            <button onclick="takeScreenshot()">Take screenshot</button>
         </body>
 
     </html>
