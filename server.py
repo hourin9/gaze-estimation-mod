@@ -13,6 +13,45 @@ from utils import helpers
 from utils.clipping import VideoClipper
 from utils.helpers import get_model;
 
+def draw_stats(frame, stats):
+    x = 10
+    y = 30
+    line_h = 30
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    scale = 0.7
+    thickness = 2
+
+    cv2.rectangle(
+        frame,
+        (5, 5),
+        (260, 5 + line_h * 2),
+        (0, 0, 0),
+        -1
+    )
+
+    cv2.putText(
+        frame,
+        f"Total: {stats['total']}",
+        (x, y),
+        font,
+        scale,
+        (255, 255, 255),
+        thickness,
+        cv2.LINE_AA
+    )
+
+    cv2.putText(
+        frame,
+        f"Cheating: {stats['sussy']}",
+        (x, y + line_h),
+        font,
+        scale,
+        (0, 255, 255) if stats["sussy"] > 0 else (0, 255, 0),
+        thickness,
+        cv2.LINE_AA
+    )
+
 class ModelCont:
     def __init__(self, model: str, weight: str):
         dataset = data_config["gaze360"];
@@ -89,12 +128,12 @@ def get_webcam_frame():
                + frame.tobytes()
                + b'\r\n');
 
-current_stats = {
-    "total": 0,
-    "sussy": 0,
-};
-
 def get_webcam_frame_with_model_shit():
+    current_stats = {
+        "total": 0,
+        "sussy": 0,
+    };
+
     cam = cv2.VideoCapture(0);
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu");
 
@@ -178,14 +217,12 @@ def get_webcam_frame_with_model_shit():
                     sussy_count += 1;
             current_stats["sussy"] = sussy_count;
 
+            draw_stats(frame, current_stats);
+
             _, jpeg = cv2.imencode(".jpg", frame);
             yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n'
                 + jpeg.tobytes()
                 + b'\r\n');
-
-@app.route("/stats")
-def stats():
-    return jsonify(current_stats);
 
 @app.route("/stream")
 def test():
@@ -210,26 +247,6 @@ def index():
             <h1>Webcam Monitor</h1>
 
             <img src="/stream" />
-
-            <h2>Hoc sinh gian lan:
-                <span id="sussy">0</span>
-            </h2>
-
-            <h2> Tong so hoc sinh:
-                <span id="total">0</span>
-            </h2>
-
-            <script>
-                function updateStats() {
-                    fetch('/stats')
-                        .then(r => r.json())
-                        .then(data => {
-                            document.getElementById('total').innerText = data.total;
-                            document.getElementById('sussy').innerText = data.sussy;
-                        });
-                }
-                setInterval(updateStats, 200);
-            </script>
 
             <br><br>
 
