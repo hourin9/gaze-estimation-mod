@@ -13,6 +13,10 @@ from utils import helpers
 from utils.clipping import VideoClipper
 from utils.helpers import get_model;
 
+manual_recording = {
+    "active": False
+};
+
 def draw_stats(frame, stats):
     x = 10
     y = 30
@@ -259,6 +263,16 @@ def index():
                     link.href = canvas.toDataURL("image/png");
                     link.click();
                 }
+
+                function toggleRecording() {
+                    fetch("/record/toggle", { method: "POST" })
+                        .then(r => r.json())
+                        .then(data => {
+                            alert(data.recording ?
+                                  "Recording started" :
+                                  "Recording stopped");
+                        });
+                }
             </script>
         </head>
         <body>
@@ -268,12 +282,17 @@ def index():
 
             <br><br>
 
-            <button onclick="alert('gay')">Start recording</button>
+            <button onclick="toggleRecording()">Record</button>
             <button onclick="takeScreenshot()">Take screenshot</button>
         </body>
 
     </html>
     """
+
+@app.route("/record/toggle", methods=["POST"])
+def toggle_recording():
+    manual_recording["active"] = not manual_recording["active"];
+    return {"recording": manual_recording["active"]};
 
 app.run(host="0.0.0.0", threaded=True);
 
