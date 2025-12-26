@@ -154,6 +154,7 @@ def get_webcam_frame_with_model_shit():
 
     is_recording = False;
     clipper = None;
+    manual_clipper = None;
 
     with torch.no_grad():
         while True:
@@ -207,8 +208,25 @@ def get_webcam_frame_with_model_shit():
                 clipper = None;
                 is_recording = False;
 
+            if manual_recording["active"]:
+                if manual_clipper is None:
+                    print("MANUAL RECORD START")
+                    fps = cam.get(cv2.CAP_PROP_FPS) or 30
+                    width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    manual_clipper = VideoClipper(fps, (width, height), "manual")
+
+            else:
+                if manual_clipper is not None:
+                    print("MANUAL RECORD STOP")
+                    manual_clipper.close()
+                    manual_clipper = None
+
             if is_recording and clipper is not None:
                 clipper.write(frame);
+
+            if manual_clipper is not None:
+                manual_clipper.write(frame);
 
             frame_count += 1;
 
